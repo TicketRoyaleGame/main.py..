@@ -19,13 +19,13 @@ def run_flask():
 # =========================================================
 TOKEN = os.getenv("TOKEN")
 WELCOME_CHANNEL_ID = 1560613422290035776   # חדר הודעות הוולקאם שנתת לי
-VERIFIED_ROLE_ID = 15606134111157581949     # רול חבר השרת שמתקבל באימות
+VERIFIED_ROLE_ID = 1560613411115758194     # רול חבר השרת שמתקבל באימות (תוקן מספר ה-ID)
 ALLOWED_USER_ID = 961945951780630541       # רק המשתמש הזה יכול לזמן את פאנל האימות
 
 # רשימת אתרים מותרים בשרת
 ALLOWED_DOMAINS = ["youtube.com", "youtu.be", "tenor.com", "giphy.com", "discord.com"]
 
-# רשימת 4 הרולים של הצוות שמורשים לשלוח קישורים - תוקן ומולא!
+# רשימת 4 הרולים של הצוות שמורשים לשלוח קישורים - לא נגענו!
 ALLOWED_ROLES_IDS = [
     1560613411564552345,
     1560613411564552346,
@@ -53,7 +53,7 @@ class VerifyView(View):
         role = guild.get_role(VERIFIED_ROLE_ID)
         
         if not role:
-            await interaction.response.send_message("❌ רול האימות לא נמצא בשרת.", ephemeral=True)
+            await interaction.response.send_message("❌ רול האימות לא נמצא בשרת. ודא שה-ID תקין.", ephemeral=True)
             return
         if role in member.roles:
             await interaction.response.send_message("אתה כבר מאומת בשרת! 🎉", ephemeral=True)
@@ -63,7 +63,7 @@ class VerifyView(View):
             await member.add_roles(role)
             await interaction.response.send_message("אומתת בהצלחה! כל ערוצי השרת נפתחו עבורך. 🎉", ephemeral=True)
         except Exception:
-            await interaction.response.send_message("שגיאה במתן הרול. ודא שהרול של הבוט גבוה יותר ברשימת התפקידים.", ephemeral=True)
+            await interaction.response.send_message("שגיאה במתן הרול. ודא שהרול של הבוט גבוה יותר ברשימת התפקידים (Roles Hierarchy).", ephemeral=True)
 
 @bot.event
 async def on_ready():
@@ -80,7 +80,7 @@ async def on_member_join(member):
     if channel:
         embed = discord.Embed(
             title="👋 ברוך הבא לשרת שלנו!",
-            description=f"היי {member.mention}, שמחים שהצטרפת אלינו! 🎉\nלחץ על כפתור האימות בערוץ המתאים כדי לקבל גישה לשרת.",
+            description=f"היי {member.mention}, שמחים שהצטרפת אלינו! 🎉\n\nלחץ על כפתור האימות בערוץ המתאים כדי לקבל גישה מלאה לשרת.",
             color=discord.Color.purple()
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -88,7 +88,7 @@ async def on_member_join(member):
         embed.add_field(name="מספר חבר:", value=f"`{len(member.guild.members)}`", inline=True)
         await channel.send(content=f"ברוך הבא {member.mention}! ✨", embed=embed)
 
-# 2. מערכת אנטי-קישורים עם החרגות
+# 2. מערכת אנטי-קישורים עם החרגות (נשארה בדיוק אותו דבר ללא שינוי)
 @bot.event
 async def on_message(message):
     if message.author.bot:
