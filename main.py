@@ -15,23 +15,18 @@ def run_flask():
     app.run(host="0.0.0.0", port=port)
 
 # =========================================================
-# הגדרות הבוט השני
+# הגדרות הבוט השני - עודכן עם ה-IDs החדשים שלך!
 # =========================================================
 TOKEN = os.getenv("TOKEN")
-WELCOME_CHANNEL_ID = int(os.getenv("WELCOME_CHANNEL_ID", "0"))
-VERIFIED_ROLE_ID = 1560666081574526977     # ה-ID של רול האימות (חבר שרת)
+WELCOME_CHANNEL_ID = 1560613412290035776   # חדר הודעות הוולקאם שנתת לי
+VERIFIED_ROLE_ID = 1560613411157581949     # רול חבר השרת שמתקבל באימות
 ALLOWED_USER_ID = 961945951780630541       # רק המשתמש הזה יכול לזמן את פאנל האימות
 
-# רשימת אתרים מותרים
+# רשימת אתרים מותרים בשרת
 ALLOWED_DOMAINS = ["youtube.com", "youtu.be", "tenor.com", "giphy.com", "discord.com"]
 
 # רשימת 4 הרולים של הצוות שמורשים לשלוח קישורים
-ALLOWED_ROLES_IDS = [
-    1560613411564552345,
-    1560613411564552346,
-    1560613411564552347,
-    1560613411564552348
-]
+ALLOWED_ROLES_IDS =
 # =========================================================
 
 intents = discord.Intents.default()
@@ -46,7 +41,7 @@ class VerifyView(View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="✅ לחץ כאן לאימות חשבון", style=discord.ButtonStyle.success, custom_id="verify_button_bot2")
+    @discord.ui.button(label="✅ לחץ כאן לאימות חשבון", style=discord.ButtonStyle.success, custom_id="verify_button_bot2_final")
     async def verify_click(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         member = interaction.user
@@ -63,7 +58,7 @@ class VerifyView(View):
             await member.add_roles(role)
             await interaction.response.send_message("אומתת בהצלחה! כל ערוצי השרת נפתחו עבורך. 🎉", ephemeral=True)
         except Exception:
-            await interaction.response.send_message("שגיאה במתן הרול. ודא שהרול של הבוט גבוה יותר ברשימה.", ephemeral=True)
+            await interaction.response.send_message("שגיאה במתן הרול. ודא שהרול של הבוט גבוה יותר ברשימת התפקידים.", ephemeral=True)
 
 @bot.event
 async def on_ready():
@@ -116,7 +111,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 # פקודת סלאש לזימון פאנל האימות
-@bot.tree.command(name="setup-verify", description="מציב את פאנל האימות בשרת (רק למשתמש מורשה)")
+@bot.tree.command(name="setup-verify", description="מציב את פאנל האימות בשרת")
 async def setup_verify(interaction: discord.Interaction):
     if interaction.user.id != ALLOWED_USER_ID:
         await interaction.response.send_message("❌ אין לך הרשאה!", ephemeral=True)
