@@ -6,10 +6,12 @@ import asyncio
 from flask import Flask
 import threading
 
-# שרת רקע קטן ל-Render
+# שרת רקע קטן ל-Render / Railway
 app = Flask(__name__)
 @app.route('/')
-def home(): return "Welcome, Verify & Anti-Link Bot is alive!", 200
+def home(): 
+    return "Welcome, Verify & Anti-Link Bot is alive!", 200
+
 def run_flask():
     port = int(os.environ.get("PORT", 10002))
     app.run(host="0.0.0.0", port=port)
@@ -18,14 +20,14 @@ def run_flask():
 # הגדרות הבוט השני - עודכן עם ה-IDs החדשים שלך!
 # =========================================================
 TOKEN = os.getenv("TOKEN")
-WELCOME_CHANNEL_ID = 1560613422290035776   # חדר הודעות הוולקאם שנתת לי
-VERIFIED_ROLE_ID = 1560613411115758194     # רול חבר השרת שמתקבל באימות (תוקן מספר ה-ID)
+WELCOME_CHANNEL_ID = 1560613422290035776   # חדר הודעות הוולקאם
+VERIFIED_ROLE_ID = 1560613411115758194     # רול חבר השרת שמתקבל באימות
 ALLOWED_USER_ID = 961945951780630541       # רק המשתמש הזה יכול לזמן את פאנל האימות
 
 # רשימת אתרים מותרים בשרת
 ALLOWED_DOMAINS = ["youtube.com", "youtu.be", "tenor.com", "giphy.com", "discord.com"]
 
-# רשימת 4 הרולים של הצוות שמורשים לשלוח קישורים - לא נגענו!
+# רשימת 4 הרולים של הצוות שמורשים לשלוח קישורים
 ALLOWED_ROLES_IDS = [
     1560613411564552345,
     1560613411564552346,
@@ -41,9 +43,10 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="?", intents=intents)
 
-# --- כפתור מערכת האימות (Verify) ---
+# --- כפתור מערכת האימות (Verify) המעודכן לחלון מתמשך ---
 class VerifyView(View):
     def __init__(self):
+        # הגדרת timeout=None כאן היא קריטית בשביל שהכפתור יעבוד תמיד, גם אחרי ריסטארט לבוט!
         super().__init__(timeout=None)
 
     @discord.ui.button(label="✅ לחץ כאן לאימות חשבון", style=discord.ButtonStyle.success, custom_id="verify_button_bot2_final")
@@ -63,15 +66,18 @@ class VerifyView(View):
             await member.add_roles(role)
             await interaction.response.send_message("אומתת בהצלחה! כל ערוצי השרת נפתחו עבורך. 🎉", ephemeral=True)
         except Exception:
-            await interaction.response.send_message("שגיאה במתן הרול. ודא שהרול של הבוט גבוה יותר ברשימת התפקידים (Roles Hierarchy).", ephemeral=True)
+            await interaction.response.send_message("❌ שגיאה במתן הרול. ודא שהרול של הבוט נמצא גבוה יותר ברשימת התפקידים בדיסקורד (Roles Hierarchy).", ephemeral=True)
 
 @bot.event
 async def on_ready():
     print(f"👋 {bot.user.name} מחובר ומוכן! (וולקאם, אימות ואנטי-קישורים)")
+    # רישום ה-View מחדש בזמן עליית הבוט כדי להקשיב לכפתורים ישנים בשרת
     bot.add_view(VerifyView())
     try:
         await bot.tree.sync()
-    except Exception as e: print(e)
+        print("✅ פקודות הסלאש (Slash Commands) סונכרנו בהצלחה!")
+    except Exception as e: 
+        print(f"שגיאה בסנכרון פקודות: {e}")
 
 # 1. הודעות וולקאם בכניסה לשרת
 @bot.event
@@ -83,15 +89,19 @@ async def on_member_join(member):
             description=f"היי {member.mention}, שמחים שהצטרפת אלינו! 🎉\n\nלחץ על כפתור האימות בערוץ המתאים כדי לקבל גישה מלאה לשרת.",
             color=discord.Color.purple()
         )
-        embed.set_thumbnail(url=member.display_avatar.url)
+        # שימוש ב-display_avatar בטוח למניעת קריסות
+        if member.display_avatar:
+            embed.set_thumbnail(url=member.display_avatar.url)
+            
         embed.add_field(name="שם משתמש:", value=f"`{member.name}`", inline=True)
         embed.add_field(name="מספר חבר:", value=f"`{len(member.guild.members)}`", inline=True)
         await channel.send(content=f"ברוך הבא {member.mention}! ✨", embed=embed)
 
-# 2. מערכת אנטי-קישורים עם החרגות (נשארה בדיוק אותו דבר ללא שינוי)
+# 2. מערכת אנטי-קישורים עם החרגות
 @bot.event
 async def on_message(message):
-    if message.author.bot:
+    # מתעלם מבוטים ומודא שההודעה נשלחה בתוך שרת (ולא בפרטי)
+    if message.author.bot or not message.guild:
         return
 
     if "http://" in message.content.lower() or "https://" in message.content.lower() or "www." in message.content.lower():
@@ -111,7 +121,8 @@ async def on_message(message):
                 warn_msg = await message.channel.send(f"❌ {message.author.mention}, שליחת קישורים אסורה כאן (מותר רק לצוות בכיר, יוטיוב וגיפים)!")
                 await asyncio.sleep(5)
                 await warn_msg.delete()
-            except Exception as e: print(e)
+            except Exception as e: 
+                print(f"שגיאה במחיקת הודעה: {e}")
                 
     await bot.process_commands(message)
 
@@ -119,15 +130,19 @@ async def on_message(message):
 @bot.tree.command(name="setup-verify", description="מציב את פאנל האימות בשרת")
 async def setup_verify(interaction: discord.Interaction):
     if interaction.user.id != ALLOWED_USER_ID:
-        await interaction.response.send_message("❌ אין לך הרשאה!", ephemeral=True)
+        await interaction.response.send_message("❌ אין לך הרשאה לבצע פקודה זו!", ephemeral=True)
         return
+        
     embed = discord.Embed(
         title="מערכת אימות חשבון 🛡️",
         description="ברוכים הבאים! כדי למנוע כניסת בוטים וחשבונות פיקטיביים, אנא לחצו על הכפתור למטה כדי לקבל רול חבר שרת וגישה מלאה לערוצים.",
         color=discord.Color.green()
     )
-    await interaction.response.send_message("✅ פאנל האימות שוגר!", ephemeral=True)
+    await interaction.response.send_message("✅ פאנל האימות שוגר בהצלחה!", ephemeral=True)
     await interaction.channel.send(embed=embed, view=VerifyView())
 
+# הפעלת שרת ה-Flask ברקע
 threading.Thread(target=run_flask, daemon=True).start()
+
+# הרצת הבוט
 bot.run(TOKEN)
